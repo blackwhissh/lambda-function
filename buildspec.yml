@@ -18,7 +18,7 @@ phases:
       - echo Building the project...
       - mvn package
       - echo Packaging Lambda with SAM...
-      - sam package --template-file template.yaml --output-template-file packaged.yaml
+      - sam package --template-file template.yaml --s3-bucket arn:aws:s3:::report-function --output-template-file packaged.yaml
 
 artifacts:
   files:
