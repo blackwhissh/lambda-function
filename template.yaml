@@ -12,7 +12,7 @@ Resources:
     Properties:
       Handler: org.epam.lambda.ReportGenerator::generateAndUploadReport
       Runtime: java21
-      CodeUri: .
+      CodeUri: target/function-1.0-SNAPSHOT-jar-with-dependencies.jar
       Policies:
         - AmazonS3FullAccess
         - AmazonDynamoDBFullAccess
