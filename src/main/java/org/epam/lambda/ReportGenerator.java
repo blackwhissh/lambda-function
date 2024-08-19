@@ -43,7 +43,7 @@ public class ReportGenerator {
     public static void generateAndUploadReport() {
         LocalDate now = LocalDate.now();
         LOGGER.info("Lambda is executed at " + now);
-        AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder.defaultClient();
+        AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
 
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table table = dynamoDB.getTable(DYNAMO_TABLE_NAME);
@@ -63,7 +63,7 @@ public class ReportGenerator {
                 List<Map<String, Object>> years = item.getList("years");
 
                 for (Map<String, Object> year : years) {
-                    String yearKey = year.keySet().iterator().next(); // Assuming each map has only one key, the year
+                    String yearKey = year.keySet().iterator().next();
                     if (yearKey.equals("" + now.getYear())) {
                         Map<String, Object> months = (Map<String, Object>) year.get(yearKey);
                         Number monthData = (Number) months.get("" + now.getMonthOfYear());
