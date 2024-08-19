@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Example SAM application for Lambda integration with S3, DynamoDB,
+  and CloudWatch.
+Resources:
+  nikolozkiladze:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-nikolozkiladze-${AWS::AccountId}
+  ReportGenerator:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: org.epam.lambda.ReportGenerator::generateAndUploadReport
+      Runtime: java21
+      CodeUri: .
+      Policies:
+        - AmazonS3FullAccess
+        - AmazonDynamoDBFullAccess
+        - CloudWatchLogsFullAccess
+      Events:
+        S3Trigger:
+          Type: S3
+          Properties:
+            Bucket: !Ref nikolozkiladze
+            Events: s3:ObjectCreated:*
+      MemorySize: 3008
+      Timeout: 30
+      FunctionUrlConfig:
+        AuthType: NONE
+Outputs:
+  LambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt ReportGenerator.Arn

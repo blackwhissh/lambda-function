@@ -1,6 +1,8 @@
 package org.epam.lambda;
 
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -9,8 +11,10 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.apache.commons.csv.CSVFormat;
@@ -20,13 +24,13 @@ import org.joda.time.LocalDate;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Logger;
 
 public class ReportGenerator {
+    private static final Logger LOGGER = Logger.getLogger("ReportGenerator");
     private static final String DYNAMO_TABLE_NAME = "trainer_info";
     private static final String S3_BUCKET_NAME = "nikolozkiladze/reports";
 
@@ -38,9 +42,8 @@ public class ReportGenerator {
 
     public static void generateAndUploadReport() {
         LocalDate now = LocalDate.now();
-
-        AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder.
-                standard().withRegion(Regions.US_EAST_1).build();
+        LOGGER.info("Lambda is executed at " + now);
+        AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder.defaultClient();
 
         DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
         Table table = dynamoDB.getTable(DYNAMO_TABLE_NAME);
@@ -86,5 +89,23 @@ public class ReportGenerator {
         String reportName = "Trainers_Trainings_summary_" + now.getYear() + "_" + now.getMonthOfYear() + "_" + ".csv";
 
         s3Client.putObject(new PutObjectRequest(S3_BUCKET_NAME, reportName, contentsAsStream, md));
+
+        String url = generatePresignedUrl(S3_BUCKET_NAME, reportName, 60, s3Client);
+        LOGGER.info(url);
+    }
+
+    public static String generatePresignedUrl(String bucketName, String objectKey, int expirationInMinutes, AmazonS3 s3Client) {
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime();
+        expTimeMillis += 1000L * 60 * expirationInMinutes;
+        expiration.setTime(expTimeMillis);
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucketName, objectKey)
+                        .withMethod(com.amazonaws.HttpMethod.GET)
+                        .withExpiration(expiration);
+        URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
+
+        return url.toString();
     }
 }

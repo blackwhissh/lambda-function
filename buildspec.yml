@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto21
+    commands:
+      - echo Installing SAM CLI...
+      - pip install aws-sam-cli
+
+  pre_build:
+    commands:
+      - echo Running tests...
+      - mvn test -DskipTests=false
+
+  build:
+    commands:
+      - echo Building the project...
+      - mvn package
+      - echo Packaging Lambda with SAM...
+      - sam package --template-file template.yaml --s3-bucket s3://nikolozkiladze/lambda --output-template-file packaged.yaml
+
+artifacts:
+  files:
+    - packaged.yaml
+
