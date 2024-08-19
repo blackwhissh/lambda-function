@@ -73,7 +73,7 @@ public class ReportGenerator {
                 if (!status.equals("inactive") && monthDuration > 0) {
                     csvPrinter.printRecord(firstName, lastName, monthDuration);
                 }
-
+                LOGGER.info("CSV Created");
             }
         } catch (IOException e) {
             e.printStackTrace();
