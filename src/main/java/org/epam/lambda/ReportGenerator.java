@@ -38,6 +38,7 @@ public class ReportGenerator {
     private static final String FIRST_NAME = "trainer_first_name";
     private static final String LAST_NAME = "trainer_last_name";
     private static final String STATUS = "trainee_status";
+    private static final long EXPIRATION_MINUTE = 1000L * 60;
     private static final AmazonS3 s3Client = AmazonS3ClientBuilder.
             standard().withRegion(Regions.US_EAST_1).build();
 
@@ -69,7 +70,7 @@ public class ReportGenerator {
 
     public static String generatePresignedUrl(String bucketName, String objectKey, int expirationInMinutes, AmazonS3 s3Client) {
         Date expiration = new Date();
-        final long expTimeMillis = expiration.getTime() + 1000L * 60 * expirationInMinutes;
+        final long expTimeMillis = expiration.getTime() + EXPIRATION_MINUTE * expirationInMinutes;
         expiration.setTime(expTimeMillis);
 
         GeneratePresignedUrlRequest generatePresignedUrlRequest =
@@ -103,7 +104,7 @@ public class ReportGenerator {
                 String firstName = item.getString(FIRST_NAME);
                 String lastName = item.getString(LAST_NAME);
                 String status = item.getString(STATUS).toLowerCase();
-                if (!status.equals("inactive")){
+                if (status.equalsIgnoreCase("active")){
                     int monthDuration = 0;
                     List<Map<String, Object>> years = item.getList("years");
 
