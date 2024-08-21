@@ -25,7 +25,10 @@ import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class ReportGenerator {
@@ -104,34 +107,38 @@ public class ReportGenerator {
                 String firstName = item.getString(FIRST_NAME);
                 String lastName = item.getString(LAST_NAME);
                 String status = item.getString(STATUS).toLowerCase();
-                if (status.equalsIgnoreCase("active")){
-                    int monthDuration = 0;
+                if (status.equalsIgnoreCase("active")) {
                     List<Map<String, Object>> years = item.getList("years");
-                    if (years != null && !years.isEmpty()) {
-                        for (Map<String, Object> year : years) {
-                            String yearKey = year.keySet().iterator().next();
-                            if (yearKey.equals("" + now.getYear())) {
-                                Map<String, Object> months = (Map<String, Object>) year.get(yearKey);
-                                Number monthData = (Number) months.get("" + now.getMonth());
-                                if (monthData != null){
-                                    monthDuration = monthData.intValue();
-                                }
-                            }
-                        }
-                        if (monthDuration > 0) {
-                            csvPrinter.printRecord(firstName, lastName, monthDuration);
-                            LOGGER.info("CSV Created");
-                        } else {
-                            LOGGER.warning("CSV is not created. Reason: some data is null or empty");
-                        }
-                    } else {
-                        LOGGER.warning("Years list is null or empty");
-                    }
 
+                    extractMonthValue(years, now, csvPrinter, firstName, lastName);
                 }
             }
         } catch (IOException e) {
             LOGGER.warning("Error occurred: " + e.getMessage());
+        }
+    }
+
+    public static void extractMonthValue(List<Map<String, Object>> years, LocalDate now, CSVPrinter csvPrinter, String firstName, String lastName) throws IOException {
+        int monthDuration = 0;
+        if (years != null && !years.isEmpty()) {
+            for (Map<String, Object> year : years) {
+                String yearKey = year.keySet().iterator().next();
+                if (yearKey.equals("" + now.getYear())) {
+                    Map<String, Object> months = (Map<String, Object>) year.get(yearKey);
+                    Number monthData = (Number) months.get("" + now.getMonthValue());
+                    if (monthData != null) {
+                        monthDuration = monthData.intValue();
+                    }
+                }
+            }
+            if (monthDuration > 0) {
+                csvPrinter.printRecord(firstName, lastName, monthDuration);
+                LOGGER.info("CSV Created");
+            } else {
+                LOGGER.warning("CSV is not created. Reason: some data is null or empty");
+            }
+        } else {
+            LOGGER.warning("Years list is null or empty");
         }
     }
 }
