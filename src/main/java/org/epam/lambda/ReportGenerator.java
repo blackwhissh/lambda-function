@@ -107,10 +107,16 @@ public class ReportGenerator {
                 String firstName = item.getString(FIRST_NAME);
                 String lastName = item.getString(LAST_NAME);
                 String status = item.getString(STATUS).toLowerCase();
+
                 if (status.equalsIgnoreCase("active")) {
                     List<Map<String, Object>> years = item.getList("years");
-
-                    extractMonthValue(years, now, csvPrinter, firstName, lastName);
+                    if (years != null) {
+                        extractMonthValue(years, now, csvPrinter, firstName, lastName);
+                    } else {
+                        LOGGER.info("No years data available for " + firstName + " " + lastName);
+                    }
+                } else {
+                    LOGGER.info("Skipping inactive or null status for: " + firstName + " " + lastName);
                 }
             }
         } catch (IOException e) {
@@ -118,27 +124,31 @@ public class ReportGenerator {
         }
     }
 
-    public static void extractMonthValue(List<Map<String, Object>> years, LocalDate now, CSVPrinter csvPrinter, String firstName, String lastName) throws IOException {
+    private static void extractMonthValue(List<Map<String, Object>> years, LocalDate now, CSVPrinter csvPrinter, String firstName, String lastName) throws IOException {
         int monthDuration = 0;
-        if (years != null && !years.isEmpty()) {
-            for (Map<String, Object> year : years) {
-                String yearKey = year.keySet().iterator().next();
-                if (yearKey.equals("" + now.getYear())) {
-                    Map<String, Object> months = (Map<String, Object>) year.get(yearKey);
-                    Number monthData = (Number) months.get("" + now.getMonthValue());
-                    if (monthData != null) {
-                        monthDuration = monthData.intValue();
+        String currentYear = String.valueOf(now.getYear());
+        String currentMonth = String.valueOf(now.getMonthValue());
+
+        for (Map<String, Object> yearMap : years) {
+            if (yearMap.containsKey(currentYear)) {
+                List<Map<String, Object>> months = (List<Map<String, Object>>) yearMap.get(currentYear);
+                for (Map<String, Object> monthMap : months) {
+                    String month = (String) monthMap.get("month");
+                    if (month.equals(currentMonth)) {
+                        Number summary = (Number) monthMap.get("summary");
+                        if (summary != null) {
+                            monthDuration += summary.intValue();
+                        }
                     }
                 }
             }
-            if (monthDuration > 0) {
-                csvPrinter.printRecord(firstName, lastName, monthDuration);
-                LOGGER.info("CSV Created");
-            } else {
-                LOGGER.warning("CSV is not created. Reason: some data is null or empty");
-            }
+        }
+
+        if (monthDuration > 0) {
+            csvPrinter.printRecord(firstName, lastName, monthDuration);
+            LOGGER.info("CSV record created for: " + firstName + " " + lastName);
         } else {
-            LOGGER.warning("Years list is null or empty");
+            LOGGER.info("No relevant data found for " + firstName + " " + lastName + " in the current month/year.");
         }
     }
 }
